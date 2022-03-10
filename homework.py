@@ -13,7 +13,7 @@ from exceptions import (
     BotTypeError, BotKeyError, ResponseError, SendMessageError
 )
 
-PERIOD_IN_DAYS = 600
+PERIOD_IN_DAYS = 30
 PERIOD = int(datetime.timedelta(days=PERIOD_IN_DAYS).total_seconds())
 
 load_dotenv()
@@ -22,7 +22,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_TIME = 60
+RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
