@@ -13,7 +13,7 @@ from exceptions import (
     BotTypeError, BotKeyError, ResponseError, SendMessageError
 )
 
-PERIOD_IN_DAYS = 30
+PERIOD_IN_DAYS = 10
 PERIOD = int(datetime.timedelta(days=PERIOD_IN_DAYS).total_seconds())
 
 load_dotenv()
@@ -22,7 +22,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_TIME = 600
+RETRY_TIME = 20
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -124,31 +124,31 @@ def check_tokens():
     """
     if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
         return True
-    else:
-        logging.critical('отсутствуют переменные окружения!')
-        SystemExit()
+    return False
 
 
 def main():
     """Основная логика работы бота."""
+    if not check_tokens():
+        logger.critical('Отсутствуют переменные окружения!')
+        raise SystemExit()
+
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time()) - PERIOD
-    previous_status = ''
     previous_error = Exception
-
-    check_tokens()
+    last_message = None
 
     while True:
         try:
             response = get_api_answer(current_timestamp)
             homeworks = check_response(response)
-            current_status = parse_status(homeworks[0])
-            if current_status != previous_status:
-                send_message(bot, current_status)
-                previous_status = current_status
+            message = parse_status(homeworks[0])
+
+            if message != last_message:
+                send_message(bot, message)
+                last_message = message
             else:
                 logger.debug('Статус проверки работы не изменился.')
-            time.sleep(RETRY_TIME)
 
         except Exception as error:
             if previous_error.args == error.args:
@@ -159,6 +159,9 @@ def main():
                 logger.error(message)
                 send_message(bot, message)
                 previous_error = error
+                last_message = message
+
+        finally:
             time.sleep(RETRY_TIME)
 
 
