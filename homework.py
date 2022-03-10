@@ -4,28 +4,17 @@ import os
 import sys
 import time
 from http import HTTPStatus
-from logging import StreamHandler
 
 import requests
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import BotTypeError, BotKeyError, ResponseError
-from exceptions import SendMessageError
-
-
-PERIOD_IN_DAYS = 30
-PERIOD = int(datetime.timedelta(days=PERIOD_IN_DAYS).total_seconds())
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = StreamHandler(stream=sys.stdout)
-logger.addHandler(handler)
-
-formatter = logging.Formatter(
-    '%(asctime)s - %(levelname)s - %(funcName)s - %(message)s'
+from exceptions import (
+    BotTypeError, BotKeyError, ResponseError, SendMessageError
 )
-handler.setFormatter(formatter)
+
+PERIOD_IN_DAYS = 600
+PERIOD = int(datetime.timedelta(days=PERIOD_IN_DAYS).total_seconds())
 
 load_dotenv()
 
@@ -33,7 +22,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_TIME = 600
+RETRY_TIME = 60
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -53,8 +42,8 @@ def send_message(bot, message):
     message (str): текст сообщения
     """
     try:
-        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
         logger.info('Сообщение отправлено!')
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except SendMessageError as error:
         message = f'Сообщение не отправлено: {error}'
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
@@ -89,13 +78,18 @@ def check_response(response):
     """
     if not isinstance(response, dict):
         raise BotTypeError('response', 'dict')
-    try:
-        homework_list = response.get('homeworks')
-        if not isinstance(homework_list, list):
-            raise BotTypeError('homework_list', 'list')
-        return homework_list
-    except KeyError:
+
+    homeworks = response.get('homeworks')
+    if 'homeworks' not in response:
         raise BotKeyError('response', 'homeworks')
+
+    if 'current_date' not in response:
+        raise BotKeyError('response', 'current_date')
+
+    if not isinstance(homeworks, list):
+        raise BotTypeError('homeworks', 'list')
+
+    return homeworks
 
 
 def parse_status(homework):
@@ -111,13 +105,13 @@ def parse_status(homework):
     homework_status = homework.get('status')
     verdict = HOMEWORK_STATUSES.get(homework_status)
 
-    if not homework_status:
-        raise BotKeyError('homework', 'homework_status')
+    if 'status' not in homework:
+        raise BotKeyError('homework', 'status')
 
-    if not homework_name:
+    if 'homework_name' not in homework:
         raise BotKeyError('homework', 'homework_name')
 
-    if not verdict:
+    if homework_status not in HOMEWORK_STATUSES:
         raise BotKeyError('HOMEWORK_STATUSES', 'homework_status')
 
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
@@ -131,7 +125,7 @@ def check_tokens():
     if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
         return True
     else:
-        logger.critical('отсутствуют переменные окружения!')
+        logging.critical('отсутствуют переменные окружения!')
         SystemExit()
 
 
@@ -169,4 +163,10 @@ def main():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s',
+        stream=sys.stdout
+    )
+    logger = logging.getLogger(__name__)
     main()
