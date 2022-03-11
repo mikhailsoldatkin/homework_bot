@@ -13,7 +13,7 @@ from exceptions import (
     BotTypeError, BotKeyError, ResponseError, SendMessageError
 )
 
-PERIOD_IN_DAYS = 10
+PERIOD_IN_DAYS = 30
 PERIOD = int(datetime.timedelta(days=PERIOD_IN_DAYS).total_seconds())
 
 load_dotenv()
@@ -120,11 +120,9 @@ def parse_status(homework):
 def check_tokens():
     """
     Проверяет наличие всех нужных переменных окружения (токенов).
-    Возвращает True, если всё токены присутствуют.
+    Возвращает True, если все токены присутствуют.
     """
-    if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
-        return True
-    return False
+    return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
 def main():
