@@ -1,3 +1,6 @@
+from telegram import TelegramError
+
+
 class BotKeyError(KeyError):
     """Ошибка возникает в случае отсутствия ключа словаря. В аргументах
     указывается проверяемый словарь и имя ключа.
@@ -26,5 +29,5 @@ class ResponseError(Exception):
     pass
 
 
-class SendMessageError(Exception):
+class SendMessageError(TelegramError):
     pass

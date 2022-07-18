@@ -13,7 +13,7 @@ from exceptions import (
     BotTypeError, BotKeyError, ResponseError, SendMessageError
 )
 
-PERIOD_IN_DAYS = 30
+PERIOD_IN_DAYS = 10
 PERIOD = int(datetime.timedelta(days=PERIOD_IN_DAYS).total_seconds())
 
 load_dotenv()
@@ -88,6 +88,9 @@ def check_response(response):
 
     if not isinstance(homeworks, list):
         raise BotTypeError('homeworks', 'list')
+
+    if not homeworks:
+        raise IndexError('список домашних работ пуст!')
 
     return homeworks
 
